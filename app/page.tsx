@@ -8,6 +8,7 @@ import Footer from "./components/Footer";
 import { TablaGrupo } from "./components/TablaGrupo";
 import { TarjetaPartido } from "./components/TarjetaPartido";
 import FixtureEliminatoria from "./components/FixtureEliminatoria";
+import EdicionesPasadas from "./components/EdicionesPasadas";
 
 // ── Datos en vivo desde el backend ──────────────────────────
 type StandingRow = {
@@ -561,6 +562,9 @@ export default function PublicLivePage() {
           </div>
         </div>
       </main>
+
+      {/* Botón flotante + modal de ediciones pasadas (palmarés histórico) */}
+      <EdicionesPasadas />
 
       <Footer />
     </div>
