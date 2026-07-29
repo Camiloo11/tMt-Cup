@@ -345,22 +345,36 @@ export default function SupervisorPage() {
 
   const score = countGoals(eventsByTeam);
 
-  // Carga la agenda del día: asignación de cancha por nombre + partidos
-  async function loadField(field: number) {
+  // Canchas asignadas a ESTA persona (puede tener varias: p. ej. la
+  // supervisora de la cancha 3 también lleva la final en la cancha 5).
+  const [myFields, setMyFields] = useState<number[]>([]);
+
+  // Carga la agenda del día. Si la persona tiene varias canchas asignadas,
+  // combina los partidos de TODAS (ordenados por hora) para que la final
+  // en otra cancha también le aparezca en su dashboard.
+  async function loadField(field: number, allFields: number[] = [field]) {
     setFieldNumber(field);
-    const data = await fetch(`/api/agenda?field=${field}`).then((r) => r.json()).catch(() => null);
-    const assignment = (data?.assignment ?? null) as Assignment | null;
+    const fields = [...new Set([field, ...allFields])];
+    const results = await Promise.all(
+      fields.map((f) => fetch(`/api/agenda?field=${f}`).then((r) => r.json()).catch(() => null))
+    );
+    const assignment = (results[0]?.assignment ?? null) as Assignment | null;
     setRefereeName(assignment?.referee_name ?? "");
-    setApiMatches(Array.isArray(data?.matches) ? data.matches : []);
+    const matches = results
+      .flatMap((d) => (Array.isArray(d?.matches) ? d.matches : []))
+      .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+    setApiMatches(matches);
   }
 
   async function loadAgenda(name: string) {
     const all = await fetch("/api/agenda").then((r) => r.json()).catch(() => []);
     const list: Assignment[] = Array.isArray(all) ? all : [];
     setAssignments(list);
-    const mine = list.find((a) => normalizeName(a.supervisor_name ?? "") === normalizeName(name));
-    const field = mine?.field_number ?? list[0]?.field_number ?? 1;
-    await loadField(field);
+    const mine = list.filter((a) => normalizeName(a.supervisor_name ?? "") === normalizeName(name));
+    const fields = mine.map((a) => a.field_number);
+    setMyFields(fields);
+    const field = fields[0] ?? list[0]?.field_number ?? 1;
+    await loadField(field, fields.length > 0 ? fields : [field]);
   }
 
   // Guard de sesión + carga inicial (no visual): solo staff entra.
@@ -388,7 +402,8 @@ export default function SupervisorPage() {
     const fields = [...new Set(assignments.map((a) => a.field_number))].sort((a, b) => a - b);
     if (fields.length < 2 || view !== "dashboard") return;
     const idx = fields.indexOf(fieldNumber ?? fields[0]);
-    void loadField(fields[(idx + 1) % fields.length]);
+    const next = fields[(idx + 1) % fields.length];
+    void loadField(next, myFields.includes(next) ? myFields : [next]);
   }
 
   // ── RESTAURAR: al abrir la app, si quedó un partido a medias se retoma ──
@@ -858,7 +873,7 @@ export default function SupervisorPage() {
     setMatchDbId(null);
     setReport(null);
     setView("dashboard");
-    if (fieldNumber) await loadField(fieldNumber);
+    if (fieldNumber) await loadField(fieldNumber, myFields.includes(fieldNumber) ? myFields : [fieldNumber]);
   }
 
   async function handleLogout() {
@@ -1178,16 +1193,26 @@ export default function SupervisorPage() {
                 </div>
 
                 <div className="border-t border-[#10204c]/10 pt-5 flex justify-center items-center gap-3 sm:gap-6">
-                  <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12">
-                    <span className="text-xs text-[#10204c]/65 font-bold">L</span>
+                  <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12 overflow-hidden">
+                    {teamFlagSrc(selectedMatch.homeTeam) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={teamFlagSrc(selectedMatch.homeTeam)!} alt={selectedMatch.homeTeam} className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <span className="text-xs text-[#10204c]/65 font-bold">{selectedMatch.homeTeam[0] ?? "L"}</span>
+                    )}
                   </div>
 
                   <div className="font-secondary-modak text-5xl text-[#10204c] tracking-[0.05em] select-none min-w-[92px] text-center min-[375px]:text-6xl min-[375px]:min-w-[112px] sm:text-7xl sm:min-w-[140px]">
                     {score.home} - {score.away}
                   </div>
 
-                  <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12">
-                    <span className="text-xs text-[#10204c]/65 font-bold">V</span>
+                  <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12 overflow-hidden">
+                    {teamFlagSrc(selectedMatch.awayTeam) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={teamFlagSrc(selectedMatch.awayTeam)!} alt={selectedMatch.awayTeam} className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <span className="text-xs text-[#10204c]/65 font-bold">{selectedMatch.awayTeam[0] ?? "V"}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1352,8 +1377,26 @@ export default function SupervisorPage() {
                 </div>
 
                 <div className="py-2 flex flex-col items-center justify-center">
-                  <div className="font-secondary-modak text-6xl text-[#10204c] tracking-tight leading-none drop-shadow-[0_2px_12px_rgba(16,32,76,0.06)] min-[375px]:text-7xl">
-                    {report.score}
+                  <div className="flex items-center justify-center gap-3 sm:gap-5">
+                    <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12 overflow-hidden">
+                      {teamFlagSrc(selectedMatch.homeTeam) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={teamFlagSrc(selectedMatch.homeTeam)!} alt={selectedMatch.homeTeam} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <span className="text-xs text-[#10204c]/65 font-bold">{selectedMatch.homeTeam[0] ?? "L"}</span>
+                      )}
+                    </div>
+                    <div className="font-secondary-modak text-6xl text-[#10204c] tracking-tight leading-none drop-shadow-[0_2px_12px_rgba(16,32,76,0.06)] min-[375px]:text-7xl">
+                      {report.score}
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white/60 border border-[#10204c]/15 shadow-sm flex items-center justify-center shrink-0 sm:w-12 sm:h-12 overflow-hidden">
+                      {teamFlagSrc(selectedMatch.awayTeam) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={teamFlagSrc(selectedMatch.awayTeam)!} alt={selectedMatch.awayTeam} className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        <span className="text-xs text-[#10204c]/65 font-bold">{selectedMatch.awayTeam[0] ?? "V"}</span>
+                      )}
+                    </div>
                   </div>
                   <p className="mt-3 text-lg font-light tracking-wide text-[#10204c] sm:text-xl text-center">
                     {report.title}

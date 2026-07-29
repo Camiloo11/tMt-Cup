@@ -46,6 +46,7 @@ type ApiAdminMatch = {
   score_a: number | null;
   score_b: number | null;
   team_a_id: number | null;
+  team_b_id: number | null;
   teamA: { name: string } | null;
   teamB: { name: string } | null;
   events?: Array<{ id: number; type: "GOL" | "AMARILLA" | "ROJA"; minute: number | null; team_id: number; player: { id: number; name: string } | null }>;
@@ -137,18 +138,23 @@ export default function AdminSupervisorPage() {
       supervisorPorCancha.set(a.field_number, a.supervisor_name);
     }
 
-    const finalizados = (Array.isArray(matchesRes) ? (matchesRes as ApiAdminMatch[]) : [])
-      .filter((m) => m.status === "FINALIZADO");
+    // TODOS los partidos (no solo los finalizados): el admin puede registrar
+    // el resultado de cualquiera aunque no se haya "jugado" en la vista viva.
+    const todos = Array.isArray(matchesRes) ? (matchesRes as ApiAdminMatch[]) : [];
 
-    setActas(finalizados.map((m) => ({
+    setActas(todos.map((m) => ({
       id: m.id,
       fieldNumber: m.field_number,
       gender: m.category === "FEMENINO" ? "femenino" : "masculino",
+      category: (m.category === "FEMENINO" ? "FEMENINO" : "MASCULINO") as "MASCULINO" | "FEMENINO",
       phase: PHASE_LABEL[m.phase] ?? m.phase,
+      estado: m.status as "PROGRAMADO" | "EN_ESPERA" | "EN_JUEGO" | "FINALIZADO",
       teamA: m.teamA?.name ?? "Por definir",
       logoA: teamFlagSrc(m.teamA?.name) ?? undefined,
+      teamAId: m.team_a_id ?? null,
       teamB: m.teamB?.name ?? "Por definir",
       logoB: teamFlagSrc(m.teamB?.name) ?? undefined,
+      teamBId: m.team_b_id ?? null,
       scoreA: m.score_a ?? 0,
       scoreB: m.score_b ?? 0,
       supervisorName: supervisorPorCancha.get(m.field_number) ?? "Supervisor",
@@ -204,6 +210,9 @@ export default function AdminSupervisorPage() {
       const res = await patchAuth(`/api/matches/${actaEdicion.id}/acta`, {
           scoreA: actaEdicion.scoreA,
           scoreB: actaEdicion.scoreB,
+          // Fase final "por definir": manda los equipos elegidos en el modal
+          teamAId: actaEdicion.teamAId ?? undefined,
+          teamBId: actaEdicion.teamBId ?? undefined,
           incidentNote: actaEdicion.incidentsNotes ?? "",
           events: actaEdicion.events.map((ev) => ({
             type: ev.type,
@@ -479,7 +488,7 @@ export default function AdminSupervisorPage() {
             <section className="col-span-1 lg:col-span-6 bg-[var(--card-strong)] rounded-3xl p-4 min-[375px]:p-5 border border-[var(--border)] shadow-xs space-y-4 no-scrollbar">
               <div className="border-b border-[var(--border)] pb-4 flex flex-col items-center justify-center text-center gap-3 w-full">
                 <h2 className="text-base min-[375px]:text-lg md:text-xl font-medium tracking-wide text-[#233c97]">
-                  Actas de partidos finalizados
+                  Partidos del torneo
                 </h2>
                 {renderGenderFilterTabs(genderFilter, setGenderFilter)}
                 <div className="w-full max-w-md mx-auto">
@@ -499,7 +508,7 @@ export default function AdminSupervisorPage() {
                 {actasFiltradas.length === 0 ? (
                   <div className="text-center py-10 opacity-50 space-y-1">
                     <span className="material-symbols-outlined text-3xl">inbox</span>
-                    <p className="text-xs">No se encontraron actas bajo este filtro.</p>
+                    <p className="text-xs">No se encontraron partidos bajo este filtro.</p>
                   </div>
                 ) : (
                   actasFiltradas.map((acta) => (
@@ -542,7 +551,7 @@ export default function AdminSupervisorPage() {
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 !text-[18px]">search</span>
                   <input
                     type="text"
-                    placeholder="Buscar jugador por nombre o documento..."
+                    placeholder="Buscar por jugador, documento o equipo..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-8 h-9 rounded-xl text-xs font-medium bg-[#10204c]/[0.04] border border-transparent focus:bg-white focus:border-[#233c97] focus:outline-none transition-all"
@@ -564,13 +573,16 @@ export default function AdminSupervisorPage() {
                 {equiposConJugadores.map(({ team, jugadores }) => {
                   const isFem = team.category === "FEMENINO";
 
+                  // Una sola caja: busca por jugador (nombre/documento) y TAMBIÉN
+                  // por nombre de equipo (si el equipo coincide, se muestra completo).
+                  const query = searchQuery.toLowerCase().trim();
+                  const coincideEquipo = query !== "" && team.name.toLowerCase().includes(query);
                   const jugadoresFiltrados = jugadores.filter((p) => {
-                    const query = searchQuery.toLowerCase().trim();
-                    if (!query) return true;
+                    if (!query || coincideEquipo) return true;
                     return p.name.toLowerCase().includes(query) || (p.document || "").toLowerCase().includes(query);
                   });
 
-                  if (searchQuery && jugadoresFiltrados.length === 0) return null;
+                  if (searchQuery && !coincideEquipo && jugadoresFiltrados.length === 0) return null;
 
                   return (
                     <div key={team.id} className="rounded-2xl bg-[var(--background)] border border-[var(--border)] overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between">
@@ -724,6 +736,45 @@ export default function AdminSupervisorPage() {
               <button onClick={() => { setActaEdicion(null); setOpenActaPlayer(null); }} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors flex items-center justify-center"><span className="material-symbols-outlined !text-[18px]">close</span></button>
             </div>
             <form onSubmit={guardarCambiosActa} className="space-y-4">
+              {/* Fase final "por definir": elegir los equipos que se enfrentan */}
+              {(actaEdicion.teamAId == null || actaEdicion.teamBId == null) && (
+                <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+                  <span className="block text-[11px] font-bold text-amber-800 tracking-wider">
+                    {actaEdicion.phase} por definir — elige los equipos
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={actaEdicion.teamAId ?? ""}
+                      onChange={(e) => {
+                        const id = e.target.value ? Number(e.target.value) : null;
+                        const t = teams.find((x) => x.id === id);
+                        setActaEdicion({ ...actaEdicion, teamAId: id, teamA: t?.name ?? "Por definir", logoA: teamFlagSrc(t?.name) ?? undefined });
+                      }}
+                      className="w-full p-2 text-xs rounded-xl border border-[var(--border)] bg-white"
+                    >
+                      <option value="">Equipo A…</option>
+                      {teams.filter((t) => t.category === actaEdicion.category && t.id !== actaEdicion.teamBId).map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={actaEdicion.teamBId ?? ""}
+                      onChange={(e) => {
+                        const id = e.target.value ? Number(e.target.value) : null;
+                        const t = teams.find((x) => x.id === id);
+                        setActaEdicion({ ...actaEdicion, teamBId: id, teamB: t?.name ?? "Por definir", logoB: teamFlagSrc(t?.name) ?? undefined });
+                      }}
+                      className="w-full p-2 text-xs rounded-xl border border-[var(--border)] bg-white"
+                    >
+                      <option value="">Equipo B…</option>
+                      {teams.filter((t) => t.category === actaEdicion.category && t.id !== actaEdicion.teamAId).map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {/* Marcador (se ajusta solo al asignar goles a los jugadores) */}
               <div className="p-3 rounded-2xl bg-gray-50 border border-[var(--border)]">
                 <div className="grid grid-cols-5 items-center gap-2">

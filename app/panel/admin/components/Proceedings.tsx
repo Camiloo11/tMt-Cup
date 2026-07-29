@@ -29,7 +29,27 @@ export type FinishedMatchActa = {
   incidentsNotes?: string;
   isLocked: boolean;
   group?: string;
+  estado?: "PROGRAMADO" | "EN_ESPERA" | "EN_JUEGO" | "FINALIZADO";
+  // Para editar partidos de fase final "por definir" desde el admin
+  category?: "MASCULINO" | "FEMENINO";
+  teamAId?: number | null;
+  teamBId?: number | null;
 };
+
+// Badge de estado del partido (color según en qué punto va)
+function EstadoBadge({ estado }: { estado?: FinishedMatchActa["estado"] }) {
+  const cfg =
+    estado === "EN_JUEGO" || estado === "EN_ESPERA"
+      ? { txt: "En juego", bg: "rgba(220, 38, 38, 0.1)", color: "#dc2626" }
+      : estado === "PROGRAMADO"
+        ? { txt: "Por jugar", bg: "rgba(35, 60, 151, 0.08)", color: "var(--primary)" }
+        : { txt: "Finalizado", bg: "rgba(22, 163, 74, 0.1)", color: "var(--success)" };
+  return (
+    <span className="px-3 py-1 rounded-full text-[10px] md:text-xs font-medium" style={{ backgroundColor: cfg.bg, color: cfg.color }}>
+      {cfg.txt}
+    </span>
+  );
+}
 
 export type AuditLog = {
   id: number;
@@ -134,9 +154,7 @@ export function FinishedMatchCardMasculino({ acta, onEdit }: { acta: FinishedMat
         <span className="text-xs md:text-sm font-light tracking-widest" style={{ color: "var(--foreground)", opacity: 0.5 }}>
           Cancha {acta.fieldNumber} • <span className="font-normal">{acta.phase}</span> {acta.group && `• ${acta.group}`}
         </span>
-        <span className="px-3 py-1 rounded-full text-[10px] md:text-xs font-medium" style={{ backgroundColor: "rgba(22, 163, 74, 0.1)", color: "var(--success)" }}>
-          Finalizado
-        </span>
+        <EstadoBadge estado={acta.estado} />
       </div>
 
       <div className="grid grid-cols-7 items-center justify-between my-2">
@@ -229,9 +247,7 @@ export function FinishedMatchCardFemenino({ acta, onEdit }: { acta: FinishedMatc
         <span className="text-xs md:text-sm font-light tracking-widest" style={{ color: "var(--foreground)", opacity: 0.5 }}>
           Cancha {acta.fieldNumber} • <span className="font-normal">{acta.phase}</span> {acta.group && `• ${acta.group}`}
         </span>
-        <span className="px-3 py-1 rounded-full text-[10px] md:text-xs font-medium" style={{ backgroundColor: "rgba(13, 148, 136, 0.1)", color: "var(--success)" }}>
-          Finalizado
-        </span>
+        <EstadoBadge estado={acta.estado} />
       </div>
 
       <div className="grid grid-cols-7 items-center justify-between my-2">

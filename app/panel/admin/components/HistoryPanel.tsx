@@ -6,7 +6,7 @@ interface HistoryPanelProps {
   children: React.ReactNode;
 }
 
-const ANIMATION_MS = 300;
+const ANIMATION_MS = 600;
 
 export function HistoryPanel({ isOpen, onClose, children }: HistoryPanelProps) {
   // Controla si el componente sigue montado (para poder animar la salida antes de desmontar)
@@ -24,10 +24,18 @@ export function HistoryPanel({ isOpen, onClose, children }: HistoryPanelProps) {
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
-      // Se espera un frame para que el navegador registre el estado inicial
-      // antes de pasar al estado "visible" y así se dispare la transición CSS.
-      const raf = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(raf);
+      // DOBLE rAF: garantiza que el navegador pinte primero el estado
+      // inicial (fuera de pantalla) y LUEGO pase a visible — con uno solo,
+      // React 19 podía aplicar ambos en el mismo frame y la entrada no se
+      // animaba (el panel aparecía de golpe).
+      let raf2 = 0;
+      const raf = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setVisible(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf);
+        cancelAnimationFrame(raf2);
+      };
     }
 
     setVisible(false);
@@ -100,7 +108,7 @@ export function HistoryPanel({ isOpen, onClose, children }: HistoryPanelProps) {
       {/* OVERLAY: por encima del header (z superior) para que también quede borroso.
           Anima opacidad y blur a la vez ("transition-all" cubre backdrop-filter). */}
       <div
-        className={`fixed inset-0 z-[110] bg-[#10204c]/30 transition-all duration-300 ease-out ${
+        className={`fixed inset-0 z-[110] bg-[#10204c]/30 transition-all duration-[600ms] ease-out ${
           visible ? "opacity-100 backdrop-blur-md" : "opacity-0 backdrop-blur-none pointer-events-none"
         }`}
         onClick={onClose}
@@ -119,7 +127,7 @@ export function HistoryPanel({ isOpen, onClose, children }: HistoryPanelProps) {
             max-h-[88dvh] rounded-t-3xl
             sm:max-h-[75dvh] sm:max-w-md md:max-w-lg lg:max-w-xl sm:rounded-3xl
             ease-[cubic-bezier(0.32,0.72,0,1)]
-            ${!isDragging ? "transition-all duration-300" : ""}
+            ${!isDragging ? "transition-all duration-[600ms]" : ""}
             ${
               visible
                 ? "opacity-100 translate-y-0 sm:scale-100"

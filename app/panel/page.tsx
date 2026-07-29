@@ -81,13 +81,13 @@ export default function AdminLoginPage() {
 
       {/* Cambiado: Se quitan clases de centrado rígido de main y se añade un PT adecuado al tamaño real del header con el logo */}
       <main className="flex-1 flex flex-col p-4 sm:p-6 pt-[100px] min-[425px]:pt-[110px] md:pt-[140px] lg:pt-[200px]">
-
+        
         {/* Contenedor Card Principal Estético - mt-auto mb-auto centra verticalmente de forma dinámica en el espacio restante */}
         <div className="flex flex-col-reverse md:flex-row bg-white rounded-3xl w-full max-w-4xl border border-[color:var(--border)] shadow-[0_20px_50px_rgba(35,60,151,0.08)] overflow-hidden my-6 mt-auto mb-auto mx-auto">
-
+          
           {/* Lado del Formulario (Izquierda) */}
           <div className="p-8 sm:p-12 md:p-16 w-full md:w-1/2 flex flex-col justify-center">
-
+            
             {/* Título */}
             <div className="mb-8">
               <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[color:var(--primary)]">
@@ -96,7 +96,7 @@ export default function AdminLoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="flex flex-col space-y-5">
-
+              
               {/* Campo Correo Electrónico */}
               <div className="space-y-1.5">
                 <label className="block text-sm font-semibold text-slate-600">
@@ -134,7 +134,7 @@ export default function AdminLoginPage() {
                     required
                     className="h-14 w-full bg-transparent pl-3 pr-2 text-sm font-medium text-[color:var(--foreground)] placeholder:text-slate-400 outline-none"
                   />
-
+                  
                   {/* Botón para Mostrar / Ocultar (Íconos redondeados) */}
                   <button
                     type="button"
@@ -200,15 +200,15 @@ export default function AdminLoginPage() {
             </form>
           </div>
 
-          {/* Lado Imagen Decorativa (Derecha) */}
-          <div className="w-full md:w-1/2 min-h-[220px] md:min-h-full relative overflow-hidden bg-slate-100">
+          <div className="w-full md:w-1/2 min-h-[300px] min-[425px]:min-h-[340px] md:min-h-full relative overflow-hidden bg-slate-100">
             <Image
-              src="/assets/ImageLogin.png" // Cámbiarlo a esta ruta
-              alt="tMt Cup Ilustración Login"
+              src="/assets/ImageLogin.png"
+              alt="TMT CUP — Trofeo en el estadio"
               fill
-              className="object-cover object-bottom md:object-[center_80%]"
+              className="object-cover object-[center_bottom]"
               sizes="(max-width: 768px) 100vw, 50vw"
               loading="eager"
+              unoptimized
             />
           </div>
 
