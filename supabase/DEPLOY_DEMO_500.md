@@ -1,5 +1,19 @@
 # 500 partidos en el despliegue de Vercel
 
+## Ver la demostración sin conectar una base
+
+La ruta `/demo` utiliza la misma interfaz pública con una copia incluida de los
+500 partidos, 16 equipos, posiciones y eventos de gol. No requiere variables
+de entorno, acceso a Supabase ni ejecutar SQL. Abre
+`https://tmtcup.vercel.app/demo` después de desplegar este código. Para desarrollo,
+inicia `pnpm dev` y abre `http://localhost:3000/demo`.
+
+La demostración está identificada como datos de prueba, inicia en la pestaña
+Partidos y conserva la navegación de grupos y categorías en móvil y escritorio.
+No sincroniza cambios ni incluye partidos eliminatorios. La página principal
+sigue consultando Supabase; si la consulta falla o no devuelve partidos, muestra
+un aviso con un enlace a la demostración.
+
 El archivo `seed_demo_500.sql` crea las tablas públicas necesarias para la
 consulta de partidos y carga 500 partidos sintéticos, 16 equipos, 128 jugadores
 y 1.632 goles. Usa los tipos reales de las columnas, por lo que no requiere
