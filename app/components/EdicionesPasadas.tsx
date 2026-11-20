@@ -60,12 +60,12 @@ export default function EdicionesPasadas() {
               {PAST_EDITIONS.map((ed) => (
                 <div key={ed.year} className="rounded-2xl border border-slate-200 overflow-hidden shadow-[0_4px_20px_rgba(16,32,76,0.04)]">
                   {/* Franja del año */}
-                  <div className="px-5 py-3.5 bg-gradient-to-r from-[#233c97] to-[#10204c] text-white">
+                  <div className="px-4 sm:px-5 py-4 bg-[#10204c]/[0.04] border-b border-slate-100 text-[#10204c]">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight">TMT CUP {ed.year}</span>
-                      <span className="text-[11px] text-white/70 text-right">{ed.fecha}</span>
+                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight">TMT Cup {ed.year}</span>
+                      <span className="text-[11px] text-[#10204c]/55 text-right">{ed.fecha}</span>
                     </div>
-                    {ed.sede && <p className="text-[11px] text-white/60 mt-0.5">{ed.sede}</p>}
+                    {ed.sede && <p className="text-[11px] text-[#10204c]/50 mt-0.5">{ed.sede}</p>}
                   </div>
 
                   {/* Campeones */}
@@ -92,7 +92,7 @@ export default function EdicionesPasadas() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="material-symbols-outlined !text-[16px] text-[#c99a2e]">emoji_events</span>
-                              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: isFem ? "#7c3aed" : "#233c97" }}>
+                              <span className="text-[10px] font-semibold" style={{ color: isFem ? "#7c3aed" : "#233c97" }}>
                                 Campeón {c.category}
                               </span>
                             </div>
@@ -137,7 +137,7 @@ function TeamChips({
 }) {
   return (
     <div>
-      <span className="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color }}>
+      <span className="block text-[10px] font-semibold mb-1.5" style={{ color }}>
         {titulo}
       </span>
       <div className="flex flex-wrap gap-1.5">
