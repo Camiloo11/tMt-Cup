@@ -4,6 +4,8 @@ Plataforma para seguir el torneo en vivo y gestionar partidos, equipos y resulta
 
 **[Ver el sitio](https://tmtcup.vercel.app/)**
 
+[![Grupos, partidos, fixture, ediciones pasadas y acceso del personal](docs/vistas.webp)](docs/vistas.webp)
+
 Construida con Next.js, Tailwind CSS y Supabase.
 
 ## Desarrollo
