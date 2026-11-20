@@ -1,156 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useRef } from "react";
 import { PAST_EDITIONS } from "@/lib/editions";
 import { teamFlagSrc } from "@/lib/flags";
 
-// Botón flotante "Ediciones pasadas" (esquina inferior izquierda) + modal
-// con el palmarés histórico. Los datos vienen del archivo estático
-// lib/editions.ts, así que se conservan aunque se reinicie la base de datos.
-export default function EdicionesPasadas() {
-  const [open, setOpen] = useState(false);
-
-  const flag = (name: string) => teamFlagSrc(name);
-
+function TeamName({ name }: { name: string }) {
+  const flag = teamFlagSrc(name);
   return (
-    <>
-      {/* Botón flotante (abajo-izquierda, espejo del selector de género) */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-4 h-11 rounded-full bg-white/70 backdrop-blur-md border border-white/40 shadow-[0_10px_25px_rgba(16,32,76,0.12)] text-[#10204c] hover:text-[#233c97] transition-all active:scale-95 font-poppins"
-        aria-label="Ver ediciones pasadas"
-      >
-        <span className="material-symbols-outlined !text-[22px] text-[#c99a2e]">emoji_events</span>
-        <span className="hidden min-[375px]:inline text-xs font-semibold whitespace-nowrap">Ediciones pasadas</span>
-      </button>
-
-      {/* Modal */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[120] bg-[#10204c]/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 font-poppins"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto border border-[color:var(--border,#e5e9f2)] shadow-[0_20px_50px_rgba(16,32,76,0.25)]"
-            onClick={(e) => e.stopPropagation()}
-            style={{ scrollbarWidth: "none" }}
-          >
-            {/* Cabecera */}
-            <div className="sticky top-0 bg-white/90 backdrop-blur-md px-5 sm:px-7 py-4 border-b border-slate-100 flex items-center justify-between z-10">
-              <div className="flex items-center gap-2.5">
-                <span className="material-symbols-outlined !text-[26px] text-[#c99a2e]">emoji_events</span>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-[#233c97] leading-tight">Ediciones pasadas</h2>
-                  <p className="text-[11px] text-[#10204c]/50">Palmarés histórico de la TMT CUP</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors shrink-0"
-                aria-label="Cerrar"
-              >
-                <span className="material-symbols-outlined !text-[20px]">close</span>
-              </button>
-            </div>
-
-            {/* Ediciones */}
-            <div className="p-5 sm:p-7 space-y-6">
-              {PAST_EDITIONS.map((ed) => (
-                <div key={ed.year} className="rounded-2xl border border-slate-200 overflow-hidden shadow-[0_4px_20px_rgba(16,32,76,0.04)]">
-                  {/* Franja del año */}
-                  <div className="px-4 sm:px-5 py-4 bg-[#10204c]/[0.04] border-b border-slate-100 text-[#10204c]">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-xl sm:text-2xl font-extrabold tracking-tight">TMT Cup {ed.year}</span>
-                      <span className="text-[11px] text-[#10204c]/55 text-right">{ed.fecha}</span>
-                    </div>
-                    {ed.sede && <p className="text-[11px] text-[#10204c]/50 mt-0.5">{ed.sede}</p>}
-                  </div>
-
-                  {/* Campeones */}
-                  <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {ed.champions.map((c) => {
-                      const isFem = c.category === "Femenino";
-                      return (
-                        <div
-                          key={c.category}
-                          className="rounded-2xl p-4 flex items-center gap-3 border"
-                          style={{
-                            backgroundColor: isFem ? "rgba(124,58,237,0.05)" : "rgba(35,60,151,0.05)",
-                            borderColor: isFem ? "rgba(124,58,237,0.15)" : "rgba(35,60,151,0.15)",
-                          }}
-                        >
-                          <div className="w-12 h-12 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-                            {flag(c.team) ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={flag(c.team)!} alt={c.team} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-sm font-black text-[#10204c]/50">{c.team[0]}</span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined !text-[16px] text-[#c99a2e]">emoji_events</span>
-                              <span className="text-[10px] font-semibold" style={{ color: isFem ? "#7c3aed" : "#233c97" }}>
-                                Campeón {c.category}
-                              </span>
-                            </div>
-                            <p className="text-lg font-extrabold text-[#10204c] truncate">{c.team}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Equipos participantes */}
-                  <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3">
-                    <TeamChips titulo="Torneo Masculino" teams={ed.teamsMasculino} color="#233c97" flag={flag} />
-                    <TeamChips titulo="Torneo Femenino" teams={ed.teamsFemenino} color="#7c3aed" flag={flag} />
-
-                    {ed.nota && (
-                      <p className="text-[11px] text-[#10204c]/50 italic border-t border-slate-100 mt-2 pt-2.5">
-                        {ed.nota}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    <span className="inline-flex items-center gap-2">
+      {flag && <Image src={flag} width={20} height={15} alt="" className="w-5 rounded-sm" />}
+      {name}
+    </span>
   );
 }
 
-function TeamChips({
-  titulo,
-  teams,
-  color,
-  flag,
-}: {
-  titulo: string;
-  teams: string[];
-  color: string;
-  flag: (name: string) => string | null;
-}) {
+export default function EdicionesPasadas() {
+  const dialog = useRef<HTMLDialogElement>(null);
+
   return (
-    <div>
-      <span className="block text-[10px] font-semibold mb-1.5" style={{ color }}>
-        {titulo}
-      </span>
-      <div className="flex flex-wrap gap-1.5">
-        {teams.map((t) => (
-          <span key={t} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-medium text-[#10204c]/80">
-            {flag(t) && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={flag(t)!} alt="" className="h-[0.85em] w-auto rounded-[2px]" />
-            )}
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
+    <>
+      <button type="button" aria-haspopup="dialog" aria-label="Ver ediciones pasadas"
+        onClick={() => dialog.current?.showModal()}
+        className="fixed bottom-6 left-6 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-white/40 bg-white/70 px-3 text-[#233c97] shadow-[0_10px_25px_rgba(16,32,76,0.12)] backdrop-blur-md transition hover:bg-white active:scale-95">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-6">
+          <path d="M3 11a9 9 0 1 1 2.6 7M3 5v6h6M12 7v5l3 2" />
+        </svg>
+        <span className="hidden text-xs font-semibold min-[375px]:inline">Ediciones pasadas</span>
+      </button>
+
+      <dialog ref={dialog} aria-labelledby="history-title"
+        onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}
+        className="fixed inset-0 m-auto w-[calc(100%-2rem)] max-w-2xl max-h-[85dvh] overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] shadow-xl backdrop:bg-[#10204c]/40 backdrop:backdrop-blur-sm">
+        <div className="flex max-h-[85dvh] flex-col">
+          <header className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-white px-5 py-4 sm:px-6">
+            <h2 id="history-title" className="text-lg font-semibold text-[var(--primary)]">Ediciones pasadas</h2>
+            <button type="button" aria-label="Cerrar historial" onClick={() => dialog.current?.close()}
+              className="grid size-10 place-items-center rounded-full bg-[var(--background)] text-[var(--primary)] hover:bg-white">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="size-5"><path d="m6 6 12 12M18 6 6 18" /></svg>
+            </button>
+          </header>
+          <div className="space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6">
+            {PAST_EDITIONS.map((edition) => (
+              <article key={edition.year} className="space-y-4">
+                <header>
+                  <h3 className="text-xl font-semibold">tMtCup {edition.year}</h3>
+                  <p className="mt-1 text-sm">{edition.fecha}</p>
+                  {edition.sede && <p className="text-xs opacity-70">{edition.sede}</p>}
+                </header>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(["Masculino", "Femenino"] as const).map((category) => {
+                    const teams = category === "Masculino" ? edition.teamsMasculino : edition.teamsFemenino;
+                    const winners = edition.champions.filter((champion) => champion.category === category);
+                    return (
+                      <section key={category} data-theme={category.toLowerCase()}
+                        className="rounded-2xl border border-[var(--border)] bg-[var(--card-strong)] p-4 text-[var(--foreground)]">
+                        <h4 className="text-base font-medium tracking-wide text-[var(--primary)]">Torneo {category.toLowerCase()}</h4>
+                        {winners.map(({ team }) => (
+                          <div key={team} className="mt-3 rounded-xl bg-[var(--background)] px-3 py-2">
+                            <p className="text-xs text-[var(--primary)]">Campeón</p>
+                            <strong className="text-base"><TeamName name={team} /></strong>
+                          </div>
+                        ))}
+                        <details className="mt-3 border-t border-[var(--border)] pt-2">
+                          <summary className="cursor-pointer py-1 text-sm font-medium">Equipos participantes ({teams.length})</summary>
+                          <ul className="mt-2 grid gap-2 text-sm">
+                            {teams.map((team) => <li key={team}><TeamName name={team} /></li>)}
+                          </ul>
+                        </details>
+                      </section>
+                    );
+                  })}
+                </div>
+                {edition.nota && <p className="text-xs leading-relaxed opacity-75">{edition.nota}</p>}
+              </article>
+            ))}
+          </div>
+        </div>
+      </dialog>
+    </>
   );
 }
